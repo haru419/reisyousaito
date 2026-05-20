@@ -1,1 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ネット依存度チェック</title>
 
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,150,255,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(0,150,255,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#00c6ff,#0072ff);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#0072ff;
+transform:scale(1.05);
+box-shadow:0 0 15px #0072ff,
+           0 0 35px #0072ff;
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #00c6ff;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1>🌐 ネット依存度チェック</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>ネット使用状況を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<p id="resultComment"></p>
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+{
+q:"朝起きて最初にすることは？",
+choices:[
+{text:"スマホを見る", point:3},
+{text:"SNSチェック", point:3},
+{text:"動画を見る", point:2},
+{text:"特に見ない", point:0}
+]
+},
+{
+q:"暇な時間の行動は？",
+choices:[
+{text:"すぐスマホ", point:3},
+{text:"SNSを開く", point:2},
+{text:"動画を見る", point:2},
+{text:"他のことをする", point:0}
+]
+},
+{
+q:"スマホがないときは？",
+choices:[
+{text:"落ち着かない", point:3},
+{text:"少し不安", point:2},
+{text:"ちょい困る", point:1},
+{text:"特に気にしない", point:0}
+]
+},
+{
+q:"1日のSNS/動画時間は？",
+choices:[
+{text:"6時間以上", point:3},
+{text:"3〜6時間", point:2},
+{text:"1〜3時間", point:1},
+{text:"1時間未満", point:0}
+]
+},
+{
+q:"通知が来たら？",
+choices:[
+{text:"即確認", point:3},
+{text:"気になって見る", point:2},
+{text:"あとで見る", point:1},
+{text:"放置することもある", point:0}
+]
+},
+{
+q:"寝る前の行動は？",
+choices:[
+{text:"ずっとスマホ", point:3},
+{text:"動画を見る", point:2},
+{text:"少しだけ見る", point:1},
+{text:"見ない", point:0}
+]
+},
+{
+q:"食事中は？",
+choices:[
+{text:"スマホ必須", point:3},
+{text:"たまに見る", point:2},
+{text:"あまり見ない", point:1},
+{text:"完全に触らない", point:0}
+]
+},
+{
+q:"ネットが使えないと？",
+choices:[
+{text:"かなり焦る", point:3},
+{text:"少し困る", point:2},
+{text:"まあ大丈夫", point:1},
+{text:"全く問題ない", point:0}
+]
+}
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+let btn=document.createElement("button");
+btn.textContent=c.text;
+btn.onclick=()=>select(c.point);
+ans.appendChild(btn);
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+score+=p;
+current++;
+if(current<questions.length){
+load();
+}else{
+showLoading();
+}
+}
+
+function showLoading(){
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+document.getElementById("loading").style.display="none";
+showResult();
+},1500);
+}
+
+function showResult(){
+document.getElementById("result").style.display="block";
+bar.style.width="100%";
+
+let title="",comment="";
+
+if(score<=4){
+title="🟢 健康ユーザー";
+comment="ネットとの距離感がちょうどいいタイプ。";
+}else if(score<=10){
+title="🟡 軽度依存";
+comment="少しスマホ時間が長いかも。";
+}else if(score<=16){
+title="🟠 依存気味";
+comment="無意識に触っている時間が多い状態。";
+}else{
+title="🔴 重度ネット依存";
+comment="かなりネット中心の生活になっている可能性。";
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+}
+
+function restart(){
+current=0;
+score=0;
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+load();
+}
+
+load();
+</script>
+
+</body>
+</html>
