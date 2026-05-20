@@ -24,13 +24,13 @@ background:rgba(255,255,255,0.05);
 backdrop-filter:blur(12px);
 padding:30px;
 border-radius:20px;
-box-shadow:0 0 40px rgba(0,150,255,0.25);
+box-shadow:0 0 40px rgba(255,165,0,0.25);
 transition:0.4s;
 animation:fadeIn 0.6s ease;
 }
 
 .card:hover{
-box-shadow:0 0 70px rgba(0,150,255,0.45);
+box-shadow:0 0 70px rgba(255,165,0,0.45);
 }
 
 h1{
@@ -49,7 +49,7 @@ margin-bottom:20px;
 .bar{
 height:100%;
 width:0%;
-background:linear-gradient(90deg,#00c6ff,#0072ff);
+background:linear-gradient(90deg,#ff9800,#ff3d00);
 transition:0.4s;
 }
 
@@ -73,10 +73,10 @@ font-size:14px;
 }
 
 button:hover{
-background:#0072ff;
+background:#ff6a00;
 transform:scale(1.05);
-box-shadow:0 0 15px #0072ff,
-           0 0 35px #0072ff;
+box-shadow:0 0 15px #ff6a00,
+           0 0 35px #ff3d00;
 }
 
 #loading{
@@ -88,7 +88,7 @@ text-align:center;
 width:80px;
 height:80px;
 border:8px solid #333;
-border-top:8px solid #00c6ff;
+border-top:8px solid #ff6a00;
 border-radius:50%;
 margin:20px auto;
 animation:spin 1s linear infinite;
@@ -102,6 +102,7 @@ animation:spin 1s linear infinite;
 #result{
 display:none;
 text-align:center;
+animation:fadeIn 0.5s ease;
 }
 
 @keyframes fadeIn{
@@ -127,7 +128,7 @@ to{opacity:1; transform:translateY(0);}
 
 <div id="loading">
 <div class="loader"></div>
-<p>ネット使用状況を解析中...</p>
+<p>ドーパミン反応を解析中...</p>
 </div>
 
 <div id="result">
@@ -142,75 +143,75 @@ to{opacity:1; transform:translateY(0);}
 
 const questions = [
 {
-q:"思いついたことはすぐ行動する？",
+q:"スマホを触る頻度は？",
 choices:[
-{text:"即やる", point:3},
-{text:"わりとすぐやる", point:2},
-{text:"少し考える", point:1},
-{text:"めっちゃ考える", point:0}
+{text:"ほぼ常に触ってる", point:3},
+{text:"気づいたら触ってる", point:2},
+{text:"たまに触る", point:1},
+{text:"あまり触らない", point:0}
 ]
 },
 {
-q:"テンションが上がると？",
+q:"動画を見るときは？",
 choices:[
-{text:"止まらない", point:3},
-{text:"かなり暴走する", point:2},
-{text:"普通に盛り上がる", point:1},
-{text:"あまり変わらない", point:0}
+{text:"無限に見続ける", point:3},
+{text:"おすすめに流される", point:2},
+{text:"少しだけ見る", point:1},
+{text:"あまり見ない", point:0}
 ]
 },
 {
-q:"授業や作業中の集中力は？",
+q:"退屈な時間は？",
 choices:[
-{text:"すぐ飽きる", point:3},
-{text:"たまに脱線", point:2},
-{text:"まあ普通", point:1},
-{text:"かなり集中できる", point:0}
+{text:"耐えられない", point:3},
+{text:"すぐスマホを触る", point:2},
+{text:"少し苦手", point:1},
+{text:"普通に過ごせる", point:0}
 ]
 },
 {
-q:"友達といるときのテンションは？",
+q:"通知が来たときは？",
 choices:[
-{text:"ずっと高い", point:3},
-{text:"かなりうるさい側", point:2},
+{text:"即反応", point:3},
+{text:"かなり気になる", point:2},
+{text:"あとで見る", point:1},
+{text:"気にしない", point:0}
+]
+},
+{
+q:"ゲーム・SNSのやめどきは？",
+choices:[
+{text:"やめられない", point:3},
+{text:"区切りが難しい", point:2},
+{text:"ある程度でやめる", point:1},
+{text:"すぐやめられる", point:0}
+]
+},
+{
+q:"新しい刺激への反応は？",
+choices:[
+{text:"すぐ飛びつく", point:3},
+{text:"かなり興味を持つ", point:2},
 {text:"普通", point:1},
-{text:"落ち着いてる", point:0}
+{text:"あまり興味ない", point:0}
 ]
 },
 {
-q:"思いつきで行動することは？",
+q:"集中力は？",
 choices:[
-{text:"めっちゃ多い", point:3},
-{text:"まあある", point:2},
-{text:"たまに", point:1},
-{text:"ほぼない", point:0}
+{text:"すぐ切れる", point:3},
+{text:"短い", point:2},
+{text:"普通", point:1},
+{text:"長く続く", point:0}
 ]
 },
 {
-q:"危ないこと・ノリでやりがちなことは？",
+q:"褒められたり通知が来ると？",
 choices:[
-{text:"わりとやる", point:3},
-{text:"たまにやる", point:2},
-{text:"ほぼやらない", point:1},
-{text:"絶対やらない", point:0}
-]
-},
-{
-q:"先生や親に怒られたときは？",
-choices:[
-{text:"あんま気にしない", point:3},
-{text:"ちょい反省", point:2},
-{text:"普通に反省", point:1},
-{text:"めっちゃ落ち込む", point:0}
-]
-},
-{
-q:"予定よりノリを優先する？",
-choices:[
-{text:"完全にノリ優先", point:3},
-{text:"けっこうノリ優先", point:2},
-{text:"場合による", point:1},
-{text:"予定優先", point:0}
+{text:"めっちゃ嬉しい", point:3},
+{text:"かなり反応する", point:2},
+{text:"少し嬉しい", point:1},
+{text:"あまり気にしない", point:0}
 ]
 }
 ];
@@ -233,7 +234,7 @@ btn.onclick=()=>select(c.point);
 ans.appendChild(btn);
 });
 
-bar.style.width=(current/questions.length*100)+"%";
+bar.style.width=((current)/questions.length*100)+"%";
 }
 
 function select(p){
@@ -262,21 +263,21 @@ bar.style.width="100%";
 
 let title="",comment="";
 
-if(score<=4){
-title="🟢 冷静タイプ";
-comment="落ち着いた判断ができる安定型。";
+if(score<=5){
+title="🟢 安定脳タイプ";
+comment="ドーパミンに振り回されにくい安定型。";
 }
 else if(score<=10){
-title="🟡 ノリ普通タイプ";
-comment="バランス型で一番普通。";
+title="🟡 軽度ドパガキ";
+comment="少し刺激に影響されやすいタイプ。";
 }
 else if(score<=16){
-title="🟠 ノリ強めタイプ";
-comment="テンションに左右されやすい。";
+title="🟠 ドパガキ予備軍";
+comment="刺激・通知に反応しやすい状態。";
 }
 else{
-title="🔴 ドパガキ（暴走型）";
-comment="ノリと勢いで生きているタイプ。少し落ち着きも大事。";
+title="🔴 ドパガキ（高反応型）";
+comment="ドーパミン刺激にかなり支配されやすいタイプ。少しデジタルデトックス推奨。";
 }
 
 document.getElementById("resultTitle").textContent=title;
@@ -292,6 +293,7 @@ load();
 }
 
 load();
+
 </script>
 
 </body>
