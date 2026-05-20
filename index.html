@@ -48,9 +48,19 @@ a:hover {
 <a href="net.html">▶ ネット依存度チェック</a>
 <br><br>
 <a href="dopa.html">▶ ドパガキ診断</a>
+<audio id="clickSound" src="クリック.mp3" preload="auto"></audio>
+
+<script>
+const clickSound = document.getElementById("clickSound");
+
+document.querySelectorAll("a").forEach(link=>{
+  link.addEventListener("click", ()=>{
+    clickSound.currentTime = 0;
+    clickSound.play();
+  });
+});
+</script>
 
   
-</div>
-
 </body>
 </html>
