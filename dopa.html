@@ -1,1 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ドパガキ診断</title>
 
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,150,255,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(0,150,255,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#00c6ff,#0072ff);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#0072ff;
+transform:scale(1.05);
+box-shadow:0 0 15px #0072ff,
+           0 0 35px #0072ff;
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #00c6ff;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h1>⚡ ドパガキ診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>ネット使用状況を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<p id="resultComment"></p>
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+{
+q:"思いついたことはすぐ行動する？",
+choices:[
+{text:"即やる", point:3},
+{text:"わりとすぐやる", point:2},
+{text:"少し考える", point:1},
+{text:"めっちゃ考える", point:0}
+]
+},
+{
+q:"テンションが上がると？",
+choices:[
+{text:"止まらない", point:3},
+{text:"かなり暴走する", point:2},
+{text:"普通に盛り上がる", point:1},
+{text:"あまり変わらない", point:0}
+]
+},
+{
+q:"授業や作業中の集中力は？",
+choices:[
+{text:"すぐ飽きる", point:3},
+{text:"たまに脱線", point:2},
+{text:"まあ普通", point:1},
+{text:"かなり集中できる", point:0}
+]
+},
+{
+q:"友達といるときのテンションは？",
+choices:[
+{text:"ずっと高い", point:3},
+{text:"かなりうるさい側", point:2},
+{text:"普通", point:1},
+{text:"落ち着いてる", point:0}
+]
+},
+{
+q:"思いつきで行動することは？",
+choices:[
+{text:"めっちゃ多い", point:3},
+{text:"まあある", point:2},
+{text:"たまに", point:1},
+{text:"ほぼない", point:0}
+]
+},
+{
+q:"危ないこと・ノリでやりがちなことは？",
+choices:[
+{text:"わりとやる", point:3},
+{text:"たまにやる", point:2},
+{text:"ほぼやらない", point:1},
+{text:"絶対やらない", point:0}
+]
+},
+{
+q:"先生や親に怒られたときは？",
+choices:[
+{text:"あんま気にしない", point:3},
+{text:"ちょい反省", point:2},
+{text:"普通に反省", point:1},
+{text:"めっちゃ落ち込む", point:0}
+]
+},
+{
+q:"予定よりノリを優先する？",
+choices:[
+{text:"完全にノリ優先", point:3},
+{text:"けっこうノリ優先", point:2},
+{text:"場合による", point:1},
+{text:"予定優先", point:0}
+]
+}
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+let btn=document.createElement("button");
+btn.textContent=c.text;
+btn.onclick=()=>select(c.point);
+ans.appendChild(btn);
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+score+=p;
+current++;
+if(current<questions.length){
+load();
+}else{
+showLoading();
+}
+}
+
+function showLoading(){
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+document.getElementById("loading").style.display="none";
+showResult();
+},1500);
+}
+
+function showResult(){
+document.getElementById("result").style.display="block";
+bar.style.width="100%";
+
+let title="",comment="";
+
+if(score<=4){
+title="🟢 冷静タイプ";
+comment="落ち着いた判断ができる安定型。";
+}
+else if(score<=10){
+title="🟡 ノリ普通タイプ";
+comment="バランス型で一番普通。";
+}
+else if(score<=16){
+title="🟠 ノリ強めタイプ";
+comment="テンションに左右されやすい。";
+}
+else{
+title="🔴 ドパガキ（暴走型）";
+comment="ノリと勢いで生きているタイプ。少し落ち着きも大事。";
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+}
+
+function restart(){
+current=0;
+score=0;
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+load();
+}
+
+load();
+</script>
+
+</body>
+</html>
