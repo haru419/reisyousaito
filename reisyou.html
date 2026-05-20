@@ -272,6 +272,12 @@ function select(point) {
 }
 
 function animateAndSelect(button, point) {
+
+  // ▼ 全ボタン無効化
+  document.querySelectorAll("#answers button").forEach(b => {
+    b.disabled = true;
+  });
+
   button.style.background = "#4facfe";
   button.style.transform = "scale(0.95)";
 
