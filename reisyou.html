@@ -88,6 +88,21 @@ button:hover {
   from {opacity: 0; transform: translateY(10px);}
   to {opacity: 1; transform: translateY(0);}
 }
+
+button:active {
+  transform: scale(0.95);
+}
+
+.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
 </style>
 </head>
 <body>
@@ -115,23 +130,107 @@ button:hover {
 
 <script>
 const questions = [
-"流行っているものを見ると？",
-"熱血系コンテンツを見ると？",
-"感動話を見たら？",
-"SNS炎上を見たら？",
-"努力アピール投稿を見ると？",
-"ポジティブ全開な人を見ると？",
-"みんな絶賛している作品を見ると？",
-"流行語を聞いたとき？",
-"夢を語る人を見ると？",
-"真剣に怒っている人を見ると？"
-];
 
-const choices = [
-{ text: "素直に楽しむ", point: 0 },
-{ text: "普通に見る", point: 1 },
-{ text: "少し距離を置く", point: 2 },
-{ text: "冷静に分析する", point: 3 }
+{
+  text: "流行っているものを見ると？",
+  choices: [
+    { text: "すぐ試したくなる", point: 0 },
+    { text: "人気なら見てみる", point: 1 },
+    { text: "少し疑いながら見る", point: 2 },
+    { text: "ブームに乗る人を観察する", point: 3 }
+  ]
+},
+
+{
+  text: "SNSで誰かが努力投稿していたら？",
+  choices: [
+    { text: "素直に応援する", point: 0 },
+    { text: "すごいなと思う", point: 1 },
+    { text: "ちょっと痛く感じる", point: 2 },
+    { text: "承認欲求かな？と分析する", point: 3 }
+  ]
+},
+
+{
+  text: "感動エピソード動画を見たら？",
+  choices: [
+    { text: "普通に泣く", point: 0 },
+    { text: "いい話だなと思う", point: 1 },
+    { text: "少し冷めてしまう", point: 2 },
+    { text: "演出構成を考察する", point: 3 }
+  ]
+},
+
+{
+  text: "友達が本気で夢を語ってきたら？",
+  choices: [
+    { text: "全力で応援する", point: 0 },
+    { text: "話はちゃんと聞く", point: 1 },
+    { text: "現実的な指摘をする", point: 2 },
+    { text: "成功確率を計算してしまう", point: 3 }
+  ]
+},
+
+{
+  text: "ポジティブ全開な人を見ると？",
+  choices: [
+    { text: "元気をもらえる", point: 0 },
+    { text: "すごいなと思う", point: 1 },
+    { text: "少し疲れる", point: 2 },
+    { text: "裏を勘ぐってしまう", point: 3 }
+  ]
+},
+
+{
+  text: "みんなが絶賛している映画を観たら？",
+  choices: [
+    { text: "普通に楽しむ", point: 0 },
+    { text: "良かったと思う", point: 1 },
+    { text: "期待ほどではないと思う", point: 2 },
+    { text: "世間の評価とのズレを分析する", point: 3 }
+  ]
+},
+
+{
+  text: "炎上騒動を見たとき？",
+  choices: [
+    { text: "心配になる", point: 0 },
+    { text: "状況を見守る", point: 1 },
+    { text: "どっちもどっちと思う", point: 2 },
+    { text: "社会構造の問題だと考える", point: 3 }
+  ]
+},
+
+{
+  text: "流行語を聞いたとき？",
+  choices: [
+    { text: "すぐ使う", point: 0 },
+    { text: "たまに使う", point: 1 },
+    { text: "あまり使わない", point: 2 },
+    { text: "なぜ流行ったか考察する", point: 3 }
+  ]
+},
+
+{
+  text: "成功者インタビューを見ると？",
+  choices: [
+    { text: "素直に尊敬する", point: 0 },
+    { text: "努力はすごいと思う", point: 1 },
+    { text: "環境も大きいよなと思う", point: 2 },
+    { text: "再現性を冷静に検証する", point: 3 }
+  ]
+},
+
+{
+  text: "誰かが本気で怒っている場面を見たら？",
+  choices: [
+    { text: "感情に共感する", point: 0 },
+    { text: "事情を理解しようとする", point: 1 },
+    { text: "少し引いてしまう", point: 2 },
+    { text: "感情のメカニズムを考察する", point: 3 }
+  ]
+}
+
 ];
 
 let current = 0;
@@ -142,13 +241,20 @@ const answersEl = document.getElementById("answers");
 const bar = document.getElementById("bar");
 
 function load() {
-  questionEl.textContent = questions[current];
+  const currentQ = questions[current];
+
+  questionEl.textContent = currentQ.text;
   answersEl.innerHTML = "";
 
-  choices.forEach(c => {
+  // ▼ 選択肢をシャッフル
+  const shuffled = [...currentQ.choices].sort(() => Math.random() - 0.5);
+
+  shuffled.forEach(choice => {
     const btn = document.createElement("button");
-    btn.textContent = c.text;
-    btn.onclick = () => select(c.point);
+    btn.textContent = choice.text;
+
+    btn.onclick = () => animateAndSelect(btn, choice.point);
+
     answersEl.appendChild(btn);
   });
 
@@ -163,6 +269,22 @@ function select(point) {
   } else {
     showResult();
   }
+}
+
+function animateAndSelect(button, point) {
+  button.style.background = "#4facfe";
+  button.style.transform = "scale(0.95)";
+
+  setTimeout(() => {
+    document.querySelectorAll("#answers button").forEach(b => {
+      b.classList.add("fade-out");
+    });
+
+    setTimeout(() => {
+      select(point);
+    }, 300);
+
+  }, 150);
 }
 
 function showResult(){
