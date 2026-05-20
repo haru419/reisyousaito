@@ -7,6 +7,43 @@
 
 <style>
 body{
+overflow:hidden;
+}
+
+/* 🌌 星空背景 */
+.stars{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:-1;
+background:transparent;
+}
+
+/* 星の点 */
+.stars::before{
+content:"";
+position:absolute;
+width:200%;
+height:200%;
+background-image:radial-gradient(white 1px, transparent 1px);
+background-size:40px 40px;
+opacity:0.15;
+animation:moveStars 60s linear infinite;
+}
+
+/* 流れるアニメーション */
+@keyframes moveStars{
+from{
+transform:translateY(0);
+}
+to{
+transform:translateY(-1000px);
+}
+}
+
+body{
 margin:0;
 font-family:'Segoe UI', sans-serif;
 background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
@@ -26,11 +63,6 @@ padding:30px;
 border-radius:20px;
 box-shadow:0 0 40px rgba(255,165,0,0.25);
 transition:0.4s;
-animation:fadeIn 0.6s ease;
-}
-
-.card:hover{
-box-shadow:0 0 70px rgba(255,165,0,0.45);
 }
 
 h1{
@@ -55,7 +87,6 @@ transition:0.4s;
 
 .question{
 margin-bottom:20px;
-min-height:60px;
 font-size:18px;
 }
 
@@ -68,15 +99,12 @@ border:1px solid #444;
 background:#1f1f1f;
 color:white;
 cursor:pointer;
-transition:0.25s;
-font-size:14px;
+transition:0.2s;
 }
 
 button:hover{
 background:#ff6a00;
 transform:scale(1.05);
-box-shadow:0 0 15px #ff6a00,
-           0 0 35px #ff3d00;
 }
 
 #loading{
@@ -85,10 +113,10 @@ text-align:center;
 }
 
 .loader{
-width:80px;
-height:80px;
-border:8px solid #333;
-border-top:8px solid #ff6a00;
+width:70px;
+height:70px;
+border:6px solid #333;
+border-top:6px solid #ff6a00;
 border-radius:50%;
 margin:20px auto;
 animation:spin 1s linear infinite;
@@ -102,19 +130,15 @@ animation:spin 1s linear infinite;
 #result{
 display:none;
 text-align:center;
-animation:fadeIn 0.5s ease;
-}
-
-@keyframes fadeIn{
-from{opacity:0; transform:translateY(10px);}
-to{opacity:1; transform:translateY(0);}
 }
 </style>
 </head>
 
 <body>
-
+<div class="stars"></div>
+           
 <div class="card">
+
 <h1>⚡ ドパガキ診断</h1>
 
 <div class="progress">
@@ -128,7 +152,7 @@ to{opacity:1; transform:translateY(0);}
 
 <div id="loading">
 <div class="loader"></div>
-<p>ドーパミン反応を解析中...</p>
+<p>ドーパミン解析中...</p>
 </div>
 
 <div id="result">
@@ -139,81 +163,52 @@ to{opacity:1; transform:translateY(0);}
 
 </div>
 
+<!-- 🔊 音 -->
+<audio id="clickSound" src="click.mp3" preload="auto"></audio>
+<audio id="resultSound" src="result.mp3" preload="auto"></audio>
+
 <script>
 
+const clickSound = document.getElementById("clickSound");
+const resultSound = document.getElementById("resultSound");
+
 const questions = [
-{
-q:"スマホを触る頻度は？",
-choices:[
-{text:"ほぼ常に触ってる", point:3},
-{text:"気づいたら触ってる", point:2},
-{text:"たまに触る", point:1},
-{text:"あまり触らない", point:0}
-]
-},
-{
-q:"動画を見るときは？",
-choices:[
-{text:"無限に見続ける", point:3},
-{text:"おすすめに流される", point:2},
-{text:"少しだけ見る", point:1},
-{text:"あまり見ない", point:0}
-]
-},
-{
-q:"退屈な時間は？",
-choices:[
-{text:"耐えられない", point:3},
-{text:"すぐスマホを触る", point:2},
-{text:"少し苦手", point:1},
-{text:"普通に過ごせる", point:0}
-]
-},
-{
-q:"通知が来たときは？",
-choices:[
-{text:"即反応", point:3},
-{text:"かなり気になる", point:2},
-{text:"あとで見る", point:1},
-{text:"気にしない", point:0}
-]
-},
-{
-q:"ゲーム・SNSのやめどきは？",
-choices:[
-{text:"やめられない", point:3},
-{text:"区切りが難しい", point:2},
-{text:"ある程度でやめる", point:1},
-{text:"すぐやめられる", point:0}
-]
-},
-{
-q:"新しい刺激への反応は？",
-choices:[
-{text:"すぐ飛びつく", point:3},
-{text:"かなり興味を持つ", point:2},
-{text:"普通", point:1},
-{text:"あまり興味ない", point:0}
-]
-},
-{
-q:"集中力は？",
-choices:[
-{text:"すぐ切れる", point:3},
-{text:"短い", point:2},
-{text:"普通", point:1},
-{text:"長く続く", point:0}
-]
-},
-{
-q:"褒められたり通知が来ると？",
-choices:[
-{text:"めっちゃ嬉しい", point:3},
-{text:"かなり反応する", point:2},
-{text:"少し嬉しい", point:1},
-{text:"あまり気にしない", point:0}
-]
-}
+{q:"スマホを触る頻度は？",choices:[
+{text:"ほぼ常に触ってる",point:3},
+{text:"気づいたら触ってる",point:2},
+{text:"たまに触る",point:1},
+{text:"あまり触らない",point:0}
+]},
+{q:"動画を見るときは？",choices:[
+{text:"無限に見続ける",point:3},
+{text:"おすすめに流される",point:2},
+{text:"少しだけ見る",point:1},
+{text:"あまり見ない",point:0}
+]},
+{q:"退屈な時間は？",choices:[
+{text:"耐えられない",point:3},
+{text:"すぐスマホを触る",point:2},
+{text:"少し苦手",point:1},
+{text:"普通に過ごせる",point:0}
+]},
+{q:"通知が来たときは？",choices:[
+{text:"即反応",point:3},
+{text:"かなり気になる",point:2},
+{text:"あとで見る",point:1},
+{text:"気にしない",point:0}
+]},
+{q:"ゲーム・SNSのやめどきは？",choices:[
+{text:"やめられない",point:3},
+{text:"区切りが難しい",point:2},
+{text:"ある程度でやめる",point:1},
+{text:"すぐやめられる",point:0}
+]},
+{q:"集中力は？",choices:[
+{text:"すぐ切れる",point:3},
+{text:"短い",point:2},
+{text:"普通",point:1},
+{text:"長く続く",point:0}
+]}
 ];
 
 let current=0;
@@ -224,22 +219,30 @@ const ans=document.getElementById("answers");
 const bar=document.getElementById("bar");
 
 function load(){
-q.textContent = questions[current].q;
-ans.innerHTML = "";
+q.textContent=questions[current].q;
+ans.innerHTML="";
 
 questions[current].choices.forEach(c=>{
 let btn=document.createElement("button");
+
 btn.textContent=c.text;
-btn.onclick=()=>select(c.point);
+
+btn.onclick=()=>{
+clickSound.currentTime=0;
+clickSound.play();
+select(c.point);
+};
+
 ans.appendChild(btn);
 });
 
-bar.style.width=((current)/questions.length*100)+"%";
+bar.style.width=(current/questions.length*100)+"%";
 }
 
 function select(p){
 score+=p;
 current++;
+
 if(current<questions.length){
 load();
 }else{
@@ -258,6 +261,10 @@ showResult();
 }
 
 function showResult(){
+
+resultSound.currentTime=0;
+resultSound.play();
+
 document.getElementById("result").style.display="block";
 bar.style.width="100%";
 
@@ -266,18 +273,15 @@ let title="",comment="";
 if(score<=5){
 title="🟢 安定脳タイプ";
 comment="ドーパミンに振り回されにくい安定型。";
-}
-else if(score<=10){
+}else if(score<=10){
 title="🟡 軽度ドパガキ";
 comment="少し刺激に影響されやすいタイプ。";
-}
-else if(score<=16){
+}else if(score<=15){
 title="🟠 ドパガキ予備軍";
-comment="刺激・通知に反応しやすい状態。";
-}
-else{
-title="🔴 ドパガキ（高反応型）";
-comment="ドーパミン刺激にかなり支配されやすいタイプ。少しデジタルデトックス推奨。";
+comment="刺激にかなり反応しやすい状態。";
+}else{
+title="🔴 ドパガキ";
+comment="スマホ依存傾向が強め。少し休憩しよう。";
 }
 
 document.getElementById("resultTitle").textContent=title;
