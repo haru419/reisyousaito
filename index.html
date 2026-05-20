@@ -54,10 +54,14 @@ a:hover {
 const clickSound = document.getElementById("clickSound");
 
 document.querySelectorAll("a").forEach(link=>{
-  link.addEventListener("click", ()=>{
-    clickSound.currentTime = 0;
-    clickSound.play();
-  });
+ link.addEventListener("click", (e)=>{
+  e.preventDefault();
+  clickSound.currentTime = 0;
+  clickSound.play();
+
+  setTimeout(()=>{
+    location.href = link.href;
+  },150);
 });
 </script>
 
