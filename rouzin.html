@@ -1,1 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>インターネット老人会診断</title>
 
+<style>
+
+body{
+overflow:hidden;
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#111827,#1e293b);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+/* 星空背景 */
+.stars{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:-1;
+}
+
+.stars::before{
+content:"";
+position:absolute;
+width:200%;
+height:200%;
+background-image:radial-gradient(white 1px, transparent 1px);
+background-size:40px 40px;
+opacity:0.1;
+animation:moveStars 60s linear infinite;
+}
+
+@keyframes moveStars{
+from{
+transform:translateY(0);
+}
+to{
+transform:translateY(-1000px);
+}
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,255,200,0.2);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#00ffaa,#00ccff);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.2s;
+font-size:15px;
+}
+
+button:hover{
+background:#00ccff;
+transform:scale(1.03);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:70px;
+height:70px;
+border:6px solid #333;
+border-top:6px solid #00ffaa;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+}
+
+.note{
+font-size:12px;
+opacity:0.7;
+margin-top:15px;
+line-height:1.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="stars"></div>
+
+<div class="card">
+
+<h1>💻 インターネット老人会診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>インターネット履歴を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<p id="resultComment"></p>
+
+<p class="note">
+※この診断はエンタメです。<br>
+古参ネット民ほどダメージを受けます。
+</p>
+
+<button onclick="restart()">もう一度診断する</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"ニコニコ動画全盛期を知っている？",
+choices:[
+{text:"余裕で見てた",point:3},
+{text:"少し知ってる",point:2},
+{text:"名前だけ知ってる",point:1},
+{text:"知らない",point:0}
+]
+},
+
+{
+q:"Flashゲームで遊んだことある？",
+choices:[
+{text:"毎日やってた",point:3},
+{text:"結構遊んだ",point:2},
+{text:"少しだけ",point:1},
+{text:"知らない",point:0}
+]
+},
+
+{
+q:"ガラケーを使ったことがある？",
+choices:[
+{text:"メイン端末だった",point:3},
+{text:"少し使った",point:2},
+{text:"触ったことだけある",point:1},
+{text:"ない",point:0}
+]
+},
+
+{
+q:"『キリ番』という言葉が分かる？",
+choices:[
+{text:"懐かしすぎる",point:3},
+{text:"意味は分かる",point:2},
+{text:"聞いたことある",point:1},
+{text:"分からない",point:0}
+]
+},
+
+{
+q:"昔のネット用語を使う？",
+choices:[
+{text:"普通に使う",point:3},
+{text:"たまに出る",point:2},
+{text:"少し分かる",point:1},
+{text:"全然分からない",point:0}
+]
+},
+
+{
+q:"YouTubeよりニコニコを見ていた時代がある？",
+choices:[
+{text:"完全にそう",point:3},
+{text:"かなり見てた",point:2},
+{text:"少しだけ",point:1},
+{text:"ない",point:0}
+]
+},
+
+{
+q:"パソコンでネットするのが普通だった？",
+choices:[
+{text:"スマホよりPC派",point:3},
+{text:"昔はそうだった",point:2},
+{text:"少し覚えてる",point:1},
+{text:"最初からスマホ世代",point:0}
+]
+},
+
+{
+q:"『orz』を自然に読める？",
+choices:[
+{text:"当然読める",point:3},
+{text:"意味は分かる",point:2},
+{text:"なんとなく",point:1},
+{text:"読めない",point:0}
+]
+}
+
+];
+
+let current = 0;
+let score = 0;
+
+const q = document.getElementById("question");
+const ans = document.getElementById("answers");
+const bar = document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn = document.createElement("button");
+
+btn.textContent = c.text;
+
+btn.onclick = ()=>{
+select(c.point);
+};
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width = (current / questions.length * 100) + "%";
+}
+
+function select(p){
+
+score += p;
+current++;
+
+if(current < questions.length){
+load();
+}else{
+showLoading();
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display = "none";
+document.getElementById("loading").style.display = "block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display = "none";
+showResult();
+
+},1500);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display = "block";
+bar.style.width = "100%";
+
+let title = "";
+let comment = "";
+
+if(score <= 5){
+
+title = "📱 最新世代";
+comment = "完全にスマホ世代。老人会ネタについていけないタイプ。";
+
+}else if(score <= 10){
+
+title = "💻 軽度ネット古参";
+comment = "少し昔のネット文化を知っているタイプ。";
+
+}else if(score <= 16){
+
+title = "🖥️ ベテランネット民";
+comment = "かなり古のインターネット文化に詳しい。";
+
+}else{
+
+title = "👴 インターネット老人会 会長";
+comment = "Flash・ニコニコ・ガラケー時代を生き抜いた伝説級ネット民。";
+
+}
+
+document.getElementById("resultTitle").textContent = title;
+document.getElementById("resultComment").textContent = comment;
+
+}
+
+function restart(){
+
+current = 0;
+score = 0;
+
+document.getElementById("quiz").style.display = "block";
+document.getElementById("result").style.display = "none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
