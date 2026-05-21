@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>授業中何してるか診断</title>
+
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(255,140,0,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(255,140,0,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#ff9800,#ff5722);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#ff5722;
+transform:scale(1.05);
+box-shadow:0 0 15px #ff5722,
+           0 0 35px #ff5722;
+}
+
+button:active{
+transform:scale(0.95);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #ff9800;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+animation:fadeIn 0.5s ease;
+}
+
+.result-img{
+width:140px;
+margin:15px auto;
+border-radius:15px;
+box-shadow:0 0 25px rgba(255,140,0,0.6);
+transition:0.3s;
+}
+
+.result-img:hover{
+transform:scale(1.05);
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>🏫 授業中何してるか診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>授業態度を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<img id="resultImg" class="result-img">
+<p id="resultComment"></p>
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"授業開始5分後の状態は？",
+choices:[
+{text:"しっかり聞いてる", point:0},
+{text:"ぼーっとしてる", point:1},
+{text:"ノートに落書き", point:2},
+{text:"半分寝てる", point:3}
+]
+},
+
+{
+q:"先生が黒板を書いてる時は？",
+choices:[
+{text:"ノートを取る", point:0},
+{text:"なんとなく眺める", point:1},
+{text:"別のこと考える", point:2},
+{text:"睡眠タイム", point:3}
+]
+},
+
+{
+q:"授業中に一番多い行動は？",
+choices:[
+{text:"真面目に聞く", point:0},
+{text:"友達を見る", point:1},
+{text:"空想する", point:2},
+{text:"机と合体", point:3}
+]
+},
+
+{
+q:"先生に当てられると？",
+choices:[
+{text:"普通に答える", point:0},
+{text:"少し焦る", point:1},
+{text:"聞いてなくて詰む", point:2},
+{text:"寝起きで理解不能", point:3}
+]
+},
+
+{
+q:"ノートの内容は？",
+choices:[
+{text:"綺麗にまとめる", point:0},
+{text:"普通", point:1},
+{text:"謎のイラストあり", point:2},
+{text:"何も書いてない", point:3}
+]
+},
+
+{
+q:"眠くなった時は？",
+choices:[
+{text:"耐える", point:0},
+{text:"ぼーっとする", point:1},
+{text:"うとうとする", point:2},
+{text:"完全に寝る", point:3}
+]
+},
+
+{
+q:"授業終盤になると？",
+choices:[
+{text:"最後まで集中", point:0},
+{text:"少し疲れる", point:1},
+{text:"時計しか見てない", point:2},
+{text:"魂が抜けてる", point:3}
+]
+},
+
+{
+q:"友達との授業中の会話は？",
+choices:[
+{text:"ほぼしない", point:0},
+{text:"少しだけ", point:1},
+{text:"結構しゃべる", point:2},
+{text:"授業より会話メイン", point:3}
+]
+}
+
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn=document.createElement("button");
+
+btn.textContent=c.text;
+
+btn.onclick=()=>select(c.point);
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+
+score+=p;
+current++;
+
+if(current<questions.length){
+load();
+}else{
+showLoading();
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display="none";
+showResult();
+
+},1800);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display="block";
+bar.style.width="100%";
+
+let title="",comment="",img="";
+
+if(score<=6){
+
+title="📘 真面目ノート型";
+comment="授業をしっかり受ける優等生タイプ。";
+img="https://i.imgur.com/5cX1F6M.png";
+
+}else if(score<=12){
+
+title="🙂 ぼーっと型";
+comment="ちゃんと聞いてるつもりだけど意識が飛びがち。";
+img="https://i.imgur.com/8Km9tLL.png";
+
+}else if(score<=18){
+
+title="🎨 落書き職人型";
+comment="ノートの端に芸術作品が生まれるタイプ。";
+img="https://i.imgur.com/1Q9Z1ZK.png";
+
+}else{
+
+title="💤 睡眠学習型";
+comment="授業より睡眠を優先する究極スタイル。";
+img="https://i.imgur.com/AbX9Y3K.png";
+
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+document.getElementById("resultImg").src=img;
+
+}
+
+function restart(){
+
+current=0;
+score=0;
+
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
