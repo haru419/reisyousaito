@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学校サボり適性診断</title>
+
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,255,180,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(0,255,180,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#00ffae,#00b7ff);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#00b7ff;
+transform:scale(1.05);
+box-shadow:0 0 15px #00b7ff,
+           0 0 35px #00b7ff;
+}
+
+button:active{
+transform:scale(0.95);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #00ffae;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+animation:fadeIn 0.5s ease;
+}
+
+.result-img{
+width:140px;
+margin:15px auto;
+border-radius:15px;
+box-shadow:0 0 25px rgba(0,255,180,0.6);
+transition:0.3s;
+}
+
+.result-img:hover{
+transform:scale(1.05);
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>🏫 学校サボり適性診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>サボり適性を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<img id="resultImg" class="result-img">
+<p id="resultComment"></p>
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"朝アラームが鳴った時は？",
+choices:[
+{text:"即起きる", point:0},
+{text:"少しゴロゴロ", point:1},
+{text:"二度寝する", point:2},
+{text:"気づいたら昼", point:3}
+]
+},
+
+{
+q:"月曜日の朝の気分は？",
+choices:[
+{text:"普通", point:0},
+{text:"少しだるい", point:1},
+{text:"かなり行きたくない", point:2},
+{text:"存在を消したい", point:3}
+]
+},
+
+{
+q:"授業中は？",
+choices:[
+{text:"真面目に受ける", point:0},
+{text:"たまにぼーっとする", point:1},
+{text:"かなり眠い", point:2},
+{text:"魂が抜けてる", point:3}
+]
+},
+
+{
+q:"『今日休みたいな…』と思う頻度は？",
+choices:[
+{text:"ほぼない", point:0},
+{text:"たまにある", point:1},
+{text:"かなりある", point:2},
+{text:"毎朝思う", point:3}
+]
+},
+
+{
+q:"体調不良を疑ったことは？",
+choices:[
+{text:"ない", point:0},
+{text:"少しある", point:1},
+{text:"結構ある", point:2},
+{text:"プロレベル", point:3}
+]
+},
+
+{
+q:"学校を休んだ日の気分は？",
+choices:[
+{text:"普通", point:0},
+{text:"少し嬉しい", point:1},
+{text:"かなり嬉しい", point:2},
+{text:"解放感がすごい", point:3}
+]
+},
+
+{
+q:"宿題を忘れた時は？",
+choices:[
+{text:"正直に言う", point:0},
+{text:"軽くごまかす", point:1},
+{text:"言い訳を考える", point:2},
+{text:"存在を消したい", point:3}
+]
+},
+
+{
+q:"理想の朝は？",
+choices:[
+{text:"元気に登校", point:0},
+{text:"ゆっくり準備", point:1},
+{text:"昼まで寝る", point:2},
+{text:"学校そのものが消える", point:3}
+]
+}
+
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn=document.createElement("button");
+
+btn.textContent=c.text;
+
+btn.onclick=()=>select(c.point);
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+
+score+=p;
+current++;
+
+if(current<questions.length){
+load();
+}else{
+showLoading();
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display="none";
+showResult();
+
+},1800);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display="block";
+bar.style.width="100%";
+
+let title="",comment="",img="";
+
+if(score<=6){
+
+title="📘 真面目登校タイプ";
+comment="かなり真面目。サボる発想すら少ないタイプ。";
+img="https://i.imgur.com/5cX1F6M.png";
+
+}else if(score<=12){
+
+title="😴 ちょいサボり予備軍";
+comment="たまに休みたくなる普通タイプ。";
+img="https://i.imgur.com/8Km9tLL.png";
+
+}else if(score<=18){
+
+title="🏃 サボり適性高め";
+comment="休むための理由探しが始まっています。";
+img="https://i.imgur.com/1Q9Z1ZK.png";
+
+}else{
+
+title="👑 プロ欠席士";
+comment="布団との絆が強すぎる最終形態。";
+img="https://i.imgur.com/AbX9Y3K.png";
+
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+document.getElementById("resultImg").src=img;
+
+}
+
+function restart(){
+
+current=0;
+score=0;
+
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
