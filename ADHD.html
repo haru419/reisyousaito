@@ -1,1 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADHD傾向診断</title>
 
+<style>
+
+body{
+overflow:hidden;
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+/* 星空背景 */
+.stars{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+z-index:-1;
+}
+
+.stars::before{
+content:"";
+position:absolute;
+width:200%;
+height:200%;
+background-image:radial-gradient(white 1px, transparent 1px);
+background-size:40px 40px;
+opacity:0.12;
+animation:moveStars 60s linear infinite;
+}
+
+@keyframes moveStars{
+from{
+transform:translateY(0);
+}
+to{
+transform:translateY(-1000px);
+}
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,150,255,0.25);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#38bdf8,#2563eb);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.2s;
+font-size:15px;
+}
+
+button:hover{
+background:#2563eb;
+transform:scale(1.03);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:70px;
+height:70px;
+border:6px solid #333;
+border-top:6px solid #3b82f6;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+}
+
+.note{
+font-size:12px;
+opacity:0.7;
+margin-top:15px;
+line-height:1.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="stars"></div>
+
+<div class="card">
+
+<h1>🧠 ADHD傾向診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>診断中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<p id="resultComment"></p>
+
+<p class="note">
+※この診断は簡易的なエンタメ診断です。<br>
+正式な医療診断ではありません。
+</p>
+
+<button onclick="restart()">もう一度診断する</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"作業中に別のことが気になってしまう？",
+choices:[
+{text:"かなり多い",point:3},
+{text:"よくある",point:2},
+{text:"たまにある",point:1},
+{text:"ほとんどない",point:0}
+]
+},
+
+{
+q:"忘れ物やミスが多い？",
+choices:[
+{text:"かなり多い",point:3},
+{text:"よくある",point:2},
+{text:"少しある",point:1},
+{text:"ほぼない",point:0}
+]
+},
+
+{
+q:"長時間集中するのが苦手？",
+choices:[
+{text:"かなり苦手",point:3},
+{text:"やや苦手",point:2},
+{text:"普通",point:1},
+{text:"得意",point:0}
+]
+},
+
+{
+q:"気づいたらスマホを触っている？",
+choices:[
+{text:"常にある",point:3},
+{text:"かなりある",point:2},
+{text:"少しある",point:1},
+{text:"ほぼない",point:0}
+]
+},
+
+{
+q:"話を聞いている途中で別のことを考える？",
+choices:[
+{text:"かなりある",point:3},
+{text:"よくある",point:2},
+{text:"たまにある",point:1},
+{text:"ほぼない",point:0}
+]
+},
+
+{
+q:"思いつきで行動してしまう？",
+choices:[
+{text:"かなり多い",point:3},
+{text:"よくある",point:2},
+{text:"少しある",point:1},
+{text:"慎重派",point:0}
+]
+}
+
+];
+
+let current = 0;
+let score = 0;
+
+const q = document.getElementById("question");
+const ans = document.getElementById("answers");
+const bar = document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn = document.createElement("button");
+
+btn.textContent = c.text;
+
+btn.onclick = ()=>{
+select(c.point);
+};
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width = (current / questions.length * 100) + "%";
+}
+
+function select(p){
+
+score += p;
+current++;
+
+if(current < questions.length){
+load();
+}else{
+showLoading();
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display = "none";
+document.getElementById("loading").style.display = "block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display = "none";
+showResult();
+
+},1500);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display = "block";
+bar.style.width = "100%";
+
+let title = "";
+let comment = "";
+
+if(score <= 5){
+
+title = "🟢 集中安定タイプ";
+comment = "比較的集中力が安定しているタイプです。";
+
+}else if(score <= 10){
+
+title = "🟡 注意散漫タイプ";
+comment = "少し気が散りやすい傾向があります。";
+
+}else if(score <= 15){
+
+title = "🟠 ADHD傾向あり";
+comment = "不注意や衝動性の傾向がやや強めです。";
+
+}else{
+
+title = "🔴 ADHD傾向強め";
+comment = "集中の維持や注意管理がかなり大変なタイプかもしれません。";
+
+}
+
+document.getElementById("resultTitle").textContent = title;
+document.getElementById("resultComment").textContent = comment;
+
+}
+
+function restart(){
+
+current = 0;
+score = 0;
+
+document.getElementById("quiz").style.display = "block";
+document.getElementById("result").style.display = "none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
