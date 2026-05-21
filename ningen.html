@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人間やめてる度診断</title>
+
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(0,255,200,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(0,255,200,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#00ffaa,#00ccff);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#00ccff;
+transform:scale(1.05);
+box-shadow:0 0 15px #00ccff,
+           0 0 35px #00ccff;
+}
+
+button:active{
+transform:scale(0.95);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #00ffaa;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+animation:fadeIn 0.5s ease;
+}
+
+.result-img{
+width:140px;
+margin:15px auto;
+border-radius:15px;
+box-shadow:0 0 25px rgba(0,255,200,0.6);
+transition:0.3s;
+}
+
+.result-img:hover{
+transform:scale(1.05);
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h1>👽 人間やめてる度診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>人間性を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+<img id="resultImg" class="result-img">
+<p id="resultComment"></p>
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"休日の睡眠時間は？",
+choices:[
+{text:"普通に起きる", point:0},
+{text:"昼まで寝る", point:1},
+{text:"夕方に起きる", point:2},
+{text:"昼夜逆転してる", point:3}
+]
+},
+
+{
+q:"スマホの使用時間は？",
+choices:[
+{text:"少なめ", point:0},
+{text:"普通", point:1},
+{text:"かなり長い", point:2},
+{text:"もはや体の一部", point:3}
+]
+},
+
+{
+q:"深夜テンションになると？",
+choices:[
+{text:"普通", point:0},
+{text:"少し変になる", point:1},
+{text:"謎に元気", point:2},
+{text:"別人格になる", point:3}
+]
+},
+
+{
+q:"外に出る頻度は？",
+choices:[
+{text:"毎日出る", point:0},
+{text:"普通", point:1},
+{text:"あまり出ない", point:2},
+{text:"最後に太陽見たのいつ？", point:3}
+]
+},
+
+{
+q:"気づいたら何時間もネットしてる？",
+choices:[
+{text:"ない", point:0},
+{text:"少しある", point:1},
+{text:"かなりある", point:2},
+{text:"時間感覚が消える", point:3}
+]
+},
+
+{
+q:"生活リズムは？",
+choices:[
+{text:"健康的", point:0},
+{text:"普通", point:1},
+{text:"崩れ気味", point:2},
+{text:"存在が深夜", point:3}
+]
+},
+
+{
+q:"コンビニに行く時の格好は？",
+choices:[
+{text:"ちゃんと着替える", point:0},
+{text:"適当", point:1},
+{text:"かなりラフ", point:2},
+{text:"もはや部屋着固定", point:3}
+]
+},
+
+{
+q:"インターネットが止まったら？",
+choices:[
+{text:"別に平気", point:0},
+{text:"少し困る", point:1},
+{text:"かなり困る", point:2},
+{text:"生存不能", point:3}
+]
+}
+
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn=document.createElement("button");
+
+btn.textContent=c.text;
+
+btn.onclick=()=>select(c.point);
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+
+score+=p;
+current++;
+
+if(current<questions.length){
+load();
+}else{
+showLoading();
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display="none";
+showResult();
+
+},1800);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display="block";
+bar.style.width="100%";
+
+let title="",comment="",img="";
+
+if(score<=6){
+
+title="🙂 一般人";
+comment="まだ人間社会に適応できています。";
+img="https://i.imgur.com/8Km9tLL.png";
+
+}else if(score<=12){
+
+title="🌙 夜行性人間";
+comment="少しずつ人間を卒業し始めています。";
+img="https://i.imgur.com/1Q9Z1ZK.png";
+
+}else if(score<=18){
+
+title="💻 インターネット生命体";
+comment="ネット空間への適応が進みすぎています。";
+img="https://i.imgur.com/5cX1F6M.png";
+
+}else{
+
+title="👽 概念存在";
+comment="もはや人類という枠組みを超越しています。";
+img="https://i.imgur.com/AbX9Y3K.png";
+
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+document.getElementById("resultImg").src=img;
+
+}
+
+function restart(){
+
+current=0;
+score=0;
+
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
