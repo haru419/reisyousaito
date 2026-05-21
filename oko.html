@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>先生に怒られる頻度診断</title>
+
+<style>
+body{
+margin:0;
+font-family:'Segoe UI', sans-serif;
+background:linear-gradient(135deg,#0f0f0f,#1a1a2e);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.card{
+width:90%;
+max-width:520px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(12px);
+padding:30px;
+border-radius:20px;
+box-shadow:0 0 40px rgba(255,120,0,0.25);
+transition:0.4s;
+animation:fadeIn 0.6s ease;
+}
+
+.card:hover{
+box-shadow:0 0 70px rgba(255,120,0,0.45);
+}
+
+h1{
+text-align:center;
+margin-bottom:15px;
+}
+
+.progress{
+height:6px;
+background:#333;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.bar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#ff9800,#ff5722);
+transition:0.4s;
+}
+
+.question{
+margin-bottom:20px;
+min-height:60px;
+font-size:18px;
+}
+
+button{
+width:100%;
+padding:13px;
+margin:8px 0;
+border-radius:12px;
+border:1px solid #444;
+background:#1f1f1f;
+color:white;
+cursor:pointer;
+transition:0.25s;
+font-size:14px;
+}
+
+button:hover{
+background:#ff5722;
+transform:scale(1.05);
+box-shadow:0 0 15px #ff5722,
+           0 0 35px #ff5722;
+}
+
+button:active{
+transform:scale(0.95);
+}
+
+#loading{
+display:none;
+text-align:center;
+}
+
+.loader{
+width:80px;
+height:80px;
+border:8px solid #333;
+border-top:8px solid #ff9800;
+border-radius:50%;
+margin:20px auto;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotate(0);}
+100%{transform:rotate(360deg);}
+}
+
+#result{
+display:none;
+text-align:center;
+animation:fadeIn 0.5s ease;
+}
+
+.result-img{
+width:140px;
+margin:15px auto;
+border-radius:15px;
+box-shadow:0 0 25px rgba(255,120,0,0.6);
+transition:0.3s;
+}
+
+.result-img:hover{
+transform:scale(1.05);
+}
+
+.note{
+font-size:12px;
+opacity:0.7;
+margin-top:15px;
+line-height:1.6;
+}
+
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>📢 先生に怒られる頻度診断</h1>
+
+<div class="progress">
+<div class="bar" id="bar"></div>
+</div>
+
+<div id="quiz">
+<div class="question" id="question"></div>
+<div id="answers"></div>
+</div>
+
+<div id="loading">
+<div class="loader"></div>
+<p>先生の印象を解析中...</p>
+</div>
+
+<div id="result">
+<h2 id="resultTitle"></h2>
+
+<img id="resultImg" class="result-img">
+
+<p id="resultComment"></p>
+
+<p class="note">
+※この診断はネタ系エンタメです。<br>
+怒られない学校生活を目指そう！
+</p>
+
+<button onclick="restart()">もう一度診断</button>
+</div>
+
+</div>
+
+<script>
+
+const questions = [
+
+{
+q:"授業中のあなたは？",
+choices:[
+{text:"めちゃ静か",point:0},
+{text:"たまに話す",point:1},
+{text:"普通にしゃべる",point:2},
+{text:"ずっとしゃべってる",point:3}
+]
+},
+
+{
+q:"提出物は？",
+choices:[
+{text:"毎回出す",point:0},
+{text:"たまに忘れる",point:1},
+{text:"結構忘れる",point:2},
+{text:"存在を忘れてる",point:3}
+]
+},
+
+{
+q:"授業中スマホを触る？",
+choices:[
+{text:"絶対触らない",point:0},
+{text:"たまに見る",point:1},
+{text:"バレない程度に見る",point:2},
+{text:"普通に触る",point:3}
+]
+},
+
+{
+q:"先生の話を聞いてる？",
+choices:[
+{text:"ちゃんと聞く",point:0},
+{text:"半分くらい聞く",point:1},
+{text:"あまり聞いてない",point:2},
+{text:"全然聞いてない",point:3}
+]
+},
+
+{
+q:"席替え後どうなる？",
+choices:[
+{text:"静かに過ごす",point:0},
+{text:"友達と少し話す",point:1},
+{text:"かなりうるさくなる",point:2},
+{text:"先生に即マークされる",point:3}
+]
+},
+
+{
+q:"先生に名前を呼ばれる頻度は？",
+choices:[
+{text:"ほぼない",point:0},
+{text:"たまにある",point:1},
+{text:"よくある",point:2},
+{text:"毎日のようにある",point:3}
+]
+},
+
+{
+q:"授業中眠くなると？",
+choices:[
+{text:"耐える",point:0},
+{text:"少しウトウト",point:1},
+{text:"普通に寝る",point:2},
+{text:"爆睡して起こされる",point:3}
+]
+},
+
+{
+q:"先生が近づいてきた時は？",
+choices:[
+{text:"普通にしてる",point:0},
+{text:"ちょっと焦る",point:1},
+{text:"急いで真面目な顔する",point:2},
+{text:"『終わった…』と思う",point:3}
+]
+}
+
+];
+
+let current=0;
+let score=0;
+
+const q=document.getElementById("question");
+const ans=document.getElementById("answers");
+const bar=document.getElementById("bar");
+
+function load(){
+
+q.textContent = questions[current].q;
+ans.innerHTML = "";
+
+questions[current].choices.forEach(c=>{
+
+let btn=document.createElement("button");
+
+btn.textContent=c.text;
+
+btn.onclick=()=>select(c.point);
+
+ans.appendChild(btn);
+
+});
+
+bar.style.width=(current/questions.length*100)+"%";
+}
+
+function select(p){
+
+score+=p;
+current++;
+
+if(current<questions.length){
+
+load();
+
+}else{
+
+showLoading();
+
+}
+
+}
+
+function showLoading(){
+
+document.getElementById("quiz").style.display="none";
+document.getElementById("loading").style.display="block";
+
+setTimeout(()=>{
+
+document.getElementById("loading").style.display="none";
+showResult();
+
+},1800);
+
+}
+
+function showResult(){
+
+document.getElementById("result").style.display="block";
+
+bar.style.width="100%";
+
+let title="",comment="",img="";
+
+if(score<=6){
+
+title="😇 模範生タイプ";
+comment="先生からかなり信頼されている優等生タイプ。";
+
+img="https://i.imgur.com/5cX1F6M.png";
+
+}else if(score<=12){
+
+title="🙂 普通タイプ";
+comment="たまに注意されるけど基本は平和。";
+
+img="https://i.imgur.com/8Km9tLL.png";
+
+}else if(score<=18){
+
+title="😅 要注意人物タイプ";
+comment="先生からちょっと警戒され始めています。";
+
+img="https://i.imgur.com/1Q9Z1ZK.png";
+
+}else{
+
+title="🔥 怒られ常連タイプ";
+comment="先生が名前を覚えてるレベルの問題児かも。";
+
+img="https://i.imgur.com/AbX9Y3K.png";
+
+}
+
+document.getElementById("resultTitle").textContent=title;
+document.getElementById("resultComment").textContent=comment;
+document.getElementById("resultImg").src=img;
+
+}
+
+function restart(){
+
+current=0;
+score=0;
+
+document.getElementById("quiz").style.display="block";
+document.getElementById("result").style.display="none";
+
+load();
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
